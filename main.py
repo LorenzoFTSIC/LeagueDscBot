@@ -8,7 +8,7 @@ load_dotenv()
 discordToken = os.getenv("DISCORDTOKEN")
 riotToken = os.getenv("RIOTTOKEN")
 
-class DiscordBot:
+class GwenBot:
     def __init__(self, discord_token, riot_token):
         # Initialize with the provided tokens
         self.discord_token = discord_token
@@ -69,6 +69,5 @@ class DiscordBot:
         self.client.run(self.discord_token)
 
 
-# Create an instance of DiscordBot and run it
-chibiGwen = DiscordBot(discord_token=discordToken, riot_token=riotToken)
+chibiGwen = GwenBot(discord_token=discordToken, riot_token=riotToken)
 chibiGwen.run()
