@@ -20,10 +20,26 @@ class GwenBot:
         self.client.event(self.on_ready)
         self.client.event(self.on_message)
 
+    def getMatch(self):
+        if self.player_puuid:
+            url =   f"https://na1.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/{self.player_puuid}?api_key={self.riotToken}"
+            try:
+                response = requests.get(url)
+                response.raise_for_status()
+                returned_json = response.json()
+                print("Request successful")
+                return returned_json
+            except requests.exceptions.RequestException as e:
+                print(f"Error finding match: {e}")
+                return e
+        else:
+            print("No puuid found")
+            return "No puuid found"
+
     def get_puuid(self):
         #"""Fetches the player's PUUID from Riot Games API."""
-        game_name = "ASHKON"
-        tag = "fart"
+        game_name = "Air Coots"
+        tag = "Prime"
         url = f"https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag}?api_key={self.riotToken}"
         
         try:
@@ -59,10 +75,24 @@ class GwenBot:
         
         if message.content.startswith("$puuid"):
             if self.player_puuid:
+                print("Supplying puuid")
                 await message.channel.send(f"Ashkon's PUUID is: {self.player_puuid}")
             else:
                 print("Failed to fetch PUUID")
                 await message.channel.send("Failed to fetch PUUID")
+        
+        if message.content.startswith("$liveMatch"):
+            if self.player_puuid:
+                print("Player Found")
+                returnedJson = self.getMatch()
+                print("\nPlayers in match:\n--------------------\n")
+                for x in returnedJson["participants"]:
+                    if x["puuid"] == self.player_puuid:
+                        print("Player is: ")
+                        print(x)
+                    print(x["riotId"])
+            else:
+                print("Player not found.")
 
     def run(self):
         #"""Starts the bot and runs the event loop."""
