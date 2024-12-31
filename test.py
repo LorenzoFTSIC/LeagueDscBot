@@ -21,7 +21,7 @@ class DiscordBot:
         self.client.event(self.on_message)
 
     def get_puuid(self):
-        #"""Fetches the player's PUUID from Riot Games API."""
+        """Fetches the player's PUUID from Riot Games API."""
         game_name = "ASHKON"
         tag = "fart"
         url = f"https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag}?api_key={self.riot_token}"
@@ -37,7 +37,7 @@ class DiscordBot:
             return None
 
     async def on_ready(self):
-        #"""Triggered when the bot has successfully connected to Discord."""
+        """Triggered when the bot has successfully connected to Discord."""
         print(f"We have logged in as {self.client.user}")
         
         # Fetch the PUUID when the bot is ready
@@ -49,7 +49,7 @@ class DiscordBot:
             print("Failed to fetch PUUID")
 
     async def on_message(self, message):
-        #"""Triggered when a message is received."""
+        """Triggered when a message is received."""
         if message.author == self.client.user:
             return  # Ignore messages from the bot itself
         
@@ -65,10 +65,10 @@ class DiscordBot:
                 await message.channel.send("Failed to fetch PUUID")
 
     def run(self):
-        #"""Starts the bot and runs the event loop."""
+        """Starts the bot and runs the event loop."""
         self.client.run(self.discord_token)
 
 
 # Create an instance of DiscordBot and run it
-chibiGwen = DiscordBot(discord_token=discordToken, riot_token=riotToken)
-chibiGwen.run()
+bot = DiscordBot(discord_token=discordToken, riot_token=riotToken)
+bot.run()
