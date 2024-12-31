@@ -9,10 +9,10 @@ discordToken = os.getenv("DISCORDTOKEN")
 riotToken = os.getenv("RIOTTOKEN")
 
 class GwenBot:
-    def __init__(self, discord_token, riot_token):
+    def __init__(self, discordToken, riotToken):
         # Initialize with the provided tokens
-        self.discord_token = discord_token
-        self.riot_token = riot_token
+        self.discordToken = discordToken
+        self.riotToken = riotToken
         self.player_puuid = None  # Player PUUID will be fetched when needed
         self.client = discord.Client(command_prefix='$', intents=discord.Intents.all())
         
@@ -24,7 +24,7 @@ class GwenBot:
         #"""Fetches the player's PUUID from Riot Games API."""
         game_name = "ASHKON"
         tag = "fart"
-        url = f"https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag}?api_key={self.riot_token}"
+        url = f"https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag}?api_key={self.riotToken}"
         
         try:
             response = requests.get(url)
@@ -66,8 +66,8 @@ class GwenBot:
 
     def run(self):
         #"""Starts the bot and runs the event loop."""
-        self.client.run(self.discord_token)
+        self.client.run(self.discordToken)
 
 
-chibiGwen = GwenBot(discord_token=discordToken, riot_token=riotToken)
+chibiGwen = GwenBot(discordToken,riotToken)
 chibiGwen.run()
