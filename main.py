@@ -1,14 +1,19 @@
 import discord
 import os
-import time
+import json
 import asyncio
-from dotenv import load_dotenv
 import requests
+from dotenv import load_dotenv
 
 # Load environment variables from .env
 load_dotenv()
 discordToken = os.getenv("DISCORDTOKEN")
 riotToken = os.getenv("RIOTTOKEN")
+
+#Open local json for parsing champ data
+jsonPath = "champion.json"
+with open(jsonPath, "r", encoding="utf-8") as file:
+    champData = json.load(file)
 
 class GwenBot:
     def __init__(self, discordToken, riotToken):
@@ -19,6 +24,8 @@ class GwenBot:
         self.client = discord.Client(command_prefix='$', intents=discord.Intents.all())
         self.flag = False
         self.lastMatchID = None
+        self.curChampId = None
+        self.curChampName = None
         
         # Register event handlers
         self.client.event(self.on_ready)
@@ -42,8 +49,8 @@ class GwenBot:
 
     def get_puuid(self):
         #"""Fetches the player's PUUID from Riot Games API."""
-        game_name = "Dantes"
-        tag = "Arise"
+        game_name = "Goblin Town"
+        tag = "na3"
         url = f"https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag}?api_key={self.riotToken}"
         
         try:
@@ -55,6 +62,14 @@ class GwenBot:
         except requests.exceptions.RequestException as e:
             print(f"Error fetching PUUID: {e}")
             return None
+        
+    def findPlayerFromMatch(self, returnedJson):
+        for x in returnedJson["participants"]:
+            if x["puuid"] == self.player_puuid:
+                # print("Player is: ")
+                # print(x)
+                # print(x["riotId"])
+                return x
 
     async def on_ready(self):
         #"""Triggered when the bot has successfully connected to Discord."""
@@ -80,7 +95,7 @@ class GwenBot:
         if message.content.startswith("$puuid"):
             if self.player_puuid:
                 print("Supplying puuid")
-                await message.channel.send(f"Ashkon's PUUID is: {self.player_puuid}")
+                await message.channel.send(f"Player's PUUID is: {self.player_puuid}")
             else:
                 print("Failed to fetch PUUID")
                 await message.channel.send("Failed to fetch PUUID")
@@ -114,7 +129,14 @@ class GwenBot:
                             print("New match in progress updating data...")
                             self.lastMatchID = matchData["gameId"]
                             print(self.lastMatchID)
-                            await message.channel.send("New match found! Game id:" + str(self.lastMatchID))
+                            playerData = self.findPlayerFromMatch(matchData)
+                            self.curChampId = playerData["championId"]
+                            print("Player's champ id is: " + str(self.curChampId))
+                            for i in champData["data"]:
+                                if champData["data"][i]["key"] == str(self.curChampId):
+                                    self.curChampName = champData["data"][i]["id"]
+                            print("Player is currently playing: " + self.curChampName)
+                            await message.channel.send("New match found! Game id:" + str(self.lastMatchID) + ". They're currently playing: " + self.curChampName)
                         else:
                             print("Old match ongoing")
                         await asyncio.sleep(60)
