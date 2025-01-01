@@ -32,20 +32,18 @@ class GwenBot:
                 response.raise_for_status()
                 returnedJson = response.json()
                 print("Request successful")
-                print("Updating match ID to:")
-                self.lastMatchID = returnedJson["gameId"]
                 return returnedJson
             except requests.exceptions.RequestException as e:
                 print(f"Error finding match: {e}")
-                return e
+                return None
         else:
-            print("No puuid found")
-            return "No puuid found"
+            print("No match found")
+            return "No match found"
 
     def get_puuid(self):
         #"""Fetches the player's PUUID from Riot Games API."""
-        game_name = "Kiwihugs"
-        tag = "NA1"
+        game_name = "Dantes"
+        tag = "Arise"
         url = f"https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag}?api_key={self.riotToken}"
         
         try:
@@ -109,16 +107,21 @@ class GwenBot:
                 while (self.flag == True):
                     print("Checking for match...")
                     matchData = self.getMatch()
+                    # print(matchData)
+                    # await asyncio.sleep(30)
                     if (matchData):
                         if (matchData["gameId"] != self.lastMatchID):
-                            print("New match in progress")
-                            await message.channelsend("New match found!")
+                            print("New match in progress updating data...")
+                            self.lastMatchID = matchData["gameId"]
+                            print(self.lastMatchID)
+                            await message.channel.send("New match found! Game id:" + str(self.lastMatchID))
                         else:
                             print("Old match ongoing")
-                        await asyncio.sleep(30)
+                        await asyncio.sleep(60)
                     else:
                         print("Match not found or has ended.")
                         await asyncio.sleep(60)
+
 
             else:
                 print("Player not found")
