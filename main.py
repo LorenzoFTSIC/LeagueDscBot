@@ -1,5 +1,7 @@
 import discord
 import os
+import time
+import asyncio
 from dotenv import load_dotenv
 import requests
 
@@ -15,6 +17,8 @@ class GwenBot:
         self.riotToken = riotToken
         self.player_puuid = None  # Player PUUID will be fetched when needed
         self.client = discord.Client(command_prefix='$', intents=discord.Intents.all())
+        self.flag = False
+        self.lastMatchID = None
         
         # Register event handlers
         self.client.event(self.on_ready)
@@ -26,9 +30,11 @@ class GwenBot:
             try:
                 response = requests.get(url)
                 response.raise_for_status()
-                returned_json = response.json()
+                returnedJson = response.json()
                 print("Request successful")
-                return returned_json
+                print("Updating match ID to:")
+                self.lastMatchID = returnedJson["gameId"]
+                return returnedJson
             except requests.exceptions.RequestException as e:
                 print(f"Error finding match: {e}")
                 return e
@@ -38,8 +44,8 @@ class GwenBot:
 
     def get_puuid(self):
         #"""Fetches the player's PUUID from Riot Games API."""
-        game_name = "Air Coots"
-        tag = "Prime"
+        game_name = "Kiwihugs"
+        tag = "NA1"
         url = f"https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag}?api_key={self.riotToken}"
         
         try:
@@ -91,8 +97,32 @@ class GwenBot:
                         print("Player is: ")
                         print(x)
                     print(x["riotId"])
+                # print(returnedJson)
+                print(returnedJson["gameId"])
+                # print(returnedJson["participants"])
             else:
                 print("Player not found.")
+
+        if message.content.startswith("$listen"):
+            self.flag = True
+            if self.player_puuid:
+                while (self.flag == True):
+                    print("Checking for match...")
+                    matchData = self.getMatch()
+                    if (matchData):
+                        if (matchData["gameId"] != self.lastMatchID):
+                            print("New match in progress")
+                            await message.channelsend("New match found!")
+                        else:
+                            print("Old match ongoing")
+                        await asyncio.sleep(30)
+                    else:
+                        print("Match not found or has ended.")
+                        await asyncio.sleep(60)
+
+            else:
+                print("Player not found")
+                await message.channel.send("Player not found")
 
     def run(self):
         #"""Starts the bot and runs the event loop."""
