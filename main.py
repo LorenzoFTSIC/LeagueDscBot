@@ -1,4 +1,5 @@
 import discord
+from discord import app_commands
 import os
 import json
 import asyncio
@@ -15,6 +16,8 @@ jsonPath = "champion.json"
 with open(jsonPath, "r", encoding="utf-8") as file:
     champData = json.load(file)
 
+
+
 class GwenBot:
     def __init__(self, discordToken, riotToken):
         # Initialize with the provided tokens
@@ -22,10 +25,13 @@ class GwenBot:
         self.riotToken = riotToken
         self.player_puuid = None  # Player PUUID will be fetched when needed
         self.client = discord.Client(command_prefix='$', intents=discord.Intents.all())
+        self.tree = app_commands.CommandTree(self.client)
         self.flag = False
         self.lastMatchID = None
         self.curChampId = None
         self.curChampName = None
+        self.gameName = "imaqtpie"
+        self.gameTag = "USA"
         
         # Register event handlers
         self.client.event(self.on_ready)
@@ -47,11 +53,19 @@ class GwenBot:
             print("No match found")
             return "No match found"
 
+    def getAccountInfo(self, messageContent):
+        splitMessage = messageContent.replace("$listen ", "")
+        print(splitMessage)
+        splitMessageList = splitMessage.split("#")
+        print(splitMessageList)
+        self.gameName = splitMessageList[0]
+        self.gameTag = splitMessageList[1]
+        print(self.gameName)
+        print(self.gameTag)
+
     def get_puuid(self):
         #"""Fetches the player's PUUID from Riot Games API."""
-        game_name = "Goblin Town"
-        tag = "na3"
-        url = f"https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag}?api_key={self.riotToken}"
+        url = f"https://americas.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{self.gameName}/{self.gameTag}?api_key={self.riotToken}"
         
         try:
             response = requests.get(url)
@@ -70,18 +84,17 @@ class GwenBot:
                 # print(x)
                 # print(x["riotId"])
                 return x
+            
+    def setPlayerInfo(self, gameName, gameTag):
+        self.gameName = gameName
+        self.gameTag = gameTag
 
     async def on_ready(self):
         #"""Triggered when the bot has successfully connected to Discord."""
         print(f"We have logged in as {self.client.user}")
         
-        # Fetch the PUUID when the bot is ready
-        self.get_puuid()
-        
-        if self.player_puuid:
-            print(f"PUUID acquired: {self.player_puuid}")
-        else:
-            print("Failed to fetch PUUID")
+
+
 
     async def on_message(self, message):
         #"""Triggered when a message is received."""
@@ -99,7 +112,7 @@ class GwenBot:
             else:
                 print("Failed to fetch PUUID")
                 await message.channel.send("Failed to fetch PUUID")
-        
+
         if message.content.startswith("$liveMatch"):
             if self.player_puuid:
                 print("Player Found")
@@ -117,6 +130,15 @@ class GwenBot:
                 print("Player not found.")
 
         if message.content.startswith("$listen"):
+                    # Fetch the PUUID when the bot is ready
+            self.getAccountInfo(message.content)
+            self.get_puuid()
+        
+            if self.player_puuid:
+                print(f"PUUID acquired: {self.player_puuid}")
+            else:
+                print("Failed to fetch PUUID")
+
             self.flag = True
             if self.player_puuid:
                 while (self.flag == True):
@@ -136,7 +158,7 @@ class GwenBot:
                                 if champData["data"][i]["key"] == str(self.curChampId):
                                     self.curChampName = champData["data"][i]["id"]
                             print("Player is currently playing: " + self.curChampName)
-                            await message.channel.send("New match found! Game id:" + str(self.lastMatchID) + ". They're currently playing: " + self.curChampName)
+                            await message.channel.send("New match found! Game id:" + str(self.lastMatchID) + ".\nThey're currently playing: " + self.curChampName)
                         else:
                             print("Old match ongoing")
                         await asyncio.sleep(60)
@@ -144,15 +166,19 @@ class GwenBot:
                         print("Match not found or has ended.")
                         await asyncio.sleep(60)
 
-
             else:
                 print("Player not found")
                 await message.channel.send("Player not found")
 
+                
+        if message.content.startswith("$stopListening"):
+            self.flag = False
+            await message.channel.send("Chibi Gwen has stopped listening")
+            
+
     def run(self):
         #"""Starts the bot and runs the event loop."""
         self.client.run(self.discordToken)
-
 
 chibiGwen = GwenBot(discordToken,riotToken)
 chibiGwen.run()
