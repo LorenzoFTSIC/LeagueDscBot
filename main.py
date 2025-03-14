@@ -32,6 +32,7 @@ class GwenBot:
         self.curChampName = None
         self.gameName = "imaqtpie"
         self.gameTag = "USA"
+        self.curMatchData = None
         
         # Register event handlers
         self.client.event(self.on_ready)
@@ -45,10 +46,9 @@ class GwenBot:
                 response.raise_for_status()
                 returnedJson = response.json()
                 print("Request successful")
-                return returnedJson
+                self.curMatchData = returnedJson
             except requests.exceptions.RequestException as e:
                 print(f"Error finding match: {e}")
-                return None
         else:
             print("No match found")
             return "No match found"
@@ -93,9 +93,6 @@ class GwenBot:
         #"""Triggered when the bot has successfully connected to Discord."""
         print(f"We have logged in as {self.client.user}")
         
-
-
-
     async def on_message(self, message):
         #"""Triggered when a message is received."""
         if message.author == self.client.user:
@@ -104,14 +101,12 @@ class GwenBot:
         if message.content.startswith("$hello"):
             print("replying Hello")
             await message.channel.send("Hello!")
-        
-        if message.content.startswith("$puuid"):
-            if self.player_puuid:
-                print("Supplying puuid")
-                await message.channel.send(f"Player's PUUID is: {self.player_puuid}")
-            else:
-                print("Failed to fetch PUUID")
-                await message.channel.send("Failed to fetch PUUID")
+
+        if message.content.startswith("$update"):
+            print("Updating timestamp")
+            print(self.curMatchData["gameLength"])
+            await message.channel.send("Match has been ongoing for: " + str(self.curMatchData["gameLength"] // 60) + "minutes and " + str(self.curMatchData["gameLength"] % 60) + " seconds.")
+
 
         if message.content.startswith("$liveMatch"):
             if self.player_puuid:
@@ -143,15 +138,15 @@ class GwenBot:
             if self.player_puuid:
                 while (self.flag == True):
                     print("Checking for match...")
-                    matchData = self.getMatch()
-                    # print(matchData)
+                    self.getMatch()
+                    # print(self.curMatchData)
                     # await asyncio.sleep(30)
-                    if (matchData):
-                        if (matchData["gameId"] != self.lastMatchID):
+                    if (self.curMatchData):
+                        if (self.curMatchData["gameId"] != self.lastMatchID):
                             print("New match in progress updating data...")
-                            self.lastMatchID = matchData["gameId"]
+                            self.lastMatchID = self.curMatchData["gameId"]
                             print(self.lastMatchID)
-                            playerData = self.findPlayerFromMatch(matchData)
+                            playerData = self.findPlayerFromMatch(self.curMatchData)
                             self.curChampId = playerData["championId"]
                             print("Player's champ id is: " + str(self.curChampId))
                             for i in champData["data"]:
@@ -163,7 +158,10 @@ class GwenBot:
                             print("Old match ongoing")
                         await asyncio.sleep(60)
                     else:
-                        print("Match not found or has ended.")
+                        if (self.lastMatchID):
+                            print("Match has ended! They're (probably) queueing again...")
+                        else:
+                            print("Match not found.")
                         await asyncio.sleep(60)
 
             else:
