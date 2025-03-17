@@ -30,9 +30,10 @@ class GwenBot:
         self.lastMatchID = None
         self.curChampId = None
         self.curChampName = None
-        self.gameName = "imaqtpie"
-        self.gameTag = "USA"
+        self.gameName = None
+        self.gameTag = None
         self.curMatchData = None
+        self.postMatchData = None
         
         # Register event handlers
         self.client.event(self.on_ready)
@@ -48,12 +49,34 @@ class GwenBot:
                 print("Request successful")
                 self.curMatchData = returnedJson
             except requests.exceptions.RequestException as e:
-                print(f"Error finding match: {e}")
+                print(f"Error finding match: {e}")  
+                self.curMatchData = None
         else:
             print("No match found")
             return "No match found"
 
-    def getAccountInfo(self, messageContent):
+    def getPostMatchData(self):
+        url = f"https://americas.api.riotgames.com/lol/match/v5/matches/{self.lastMatchID}?api_key={self.riotToken}"
+        if self.lastMatchID:
+            try:
+                response = requests.get(url)
+                response.raise_for_status()
+                # returnedJson = response.json()
+                # self.curMatchData = returnedJson
+                print("Request successful")
+                print(self.postMatchData)
+                self.postMatchData = response.json()
+            except requests.exceptions.RequestException as e:
+                print(f"Error finding match: {e}")
+        else:
+            print("Can't find the last match ID.")
+
+    def postMatchRecap(self):
+        for i in self.postMatchData:
+            if self.postMatchData[participants][puuid] == self.player_puuid:
+                print(self.postMatchData[participants][win])
+
+    def getAccountInfo(self, messageContent):   
         splitMessage = messageContent.replace("$listen ", "")
         print(splitMessage)
         splitMessageList = splitMessage.split("#")
@@ -104,9 +127,9 @@ class GwenBot:
 
         if message.content.startswith("$update"):
             print("Updating timestamp")
+            self.getMatch()
             print(self.curMatchData["gameLength"])
-            await message.channel.send("Match has been ongoing for: " + str(self.curMatchData["gameLength"] // 60) + "minutes and " + str(self.curMatchData["gameLength"] % 60) + " seconds.")
-
+            await message.channel.send("Match has been ongoing for: " + str((self.curMatchData["gameLength"] + 120) // 60) + "minutes and " + str((self.curMatchData["gameLength"] + 120) % 60) + " seconds.")
 
         if message.content.startswith("$liveMatch"):
             if self.player_puuid:
@@ -160,10 +183,10 @@ class GwenBot:
                     else:
                         if (self.lastMatchID):
                             print("Match has ended! They're (probably) queueing again...")
+                            self.postMatchRecap()
                         else:
                             print("Match not found.")
                         await asyncio.sleep(60)
-
             else:
                 print("Player not found")
                 await message.channel.send("Player not found")
