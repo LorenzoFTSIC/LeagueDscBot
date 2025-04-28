@@ -13,8 +13,8 @@ riotToken = os.getenv("RIOTTOKEN")
 
 #Open local json for parsing champ data
 jsonPath = "champion.json"
-with open(jsonPath, "r", encoding="utf-8") as file:
-    champData = json.load(file)
+with open(jsonPath, "r", encoding="utf-8") as champDatafile:
+    champData = json.load(champDatafile)
 
 
 
@@ -72,6 +72,8 @@ class GwenBot:
             print("Can't find the last match ID.")
 
     def postMatchRecap(self):
+        print("Updating post match data...")
+        self.getPostMatchData()
         for i in self.postMatchData:
             if self.postMatchData[participants][puuid] == self.player_puuid:
                 print(self.postMatchData[participants][win])
@@ -172,20 +174,23 @@ class GwenBot:
                             playerData = self.findPlayerFromMatch(self.curMatchData)
                             self.curChampId = playerData["championId"]
                             print("Player's champ id is: " + str(self.curChampId))
+                            ##Move to new function - parses champid
                             for i in champData["data"]:
                                 if champData["data"][i]["key"] == str(self.curChampId):
                                     self.curChampName = champData["data"][i]["id"]
                             print("Player is currently playing: " + self.curChampName)
+
                             await message.channel.send("New match found! Game id:" + str(self.lastMatchID) + ".\nThey're currently playing: " + self.curChampName)
                         else:
                             print("Old match ongoing")
                         await asyncio.sleep(60)
                     else:
+                        ## Checks if there is a last match id saved, meaning it's not first game since bot start
                         if (self.lastMatchID):
                             print("Match has ended! They're (probably) queueing again...")
                             self.postMatchRecap()
                         else:
-                            print("Match not found.")
+                            print("Looks like they havn't started playing yet!")
                         await asyncio.sleep(60)
             else:
                 print("Player not found")
